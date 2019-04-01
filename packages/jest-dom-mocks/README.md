@@ -94,6 +94,7 @@ The following standard mocks are available:
 - `timer`
 - `promise`
 - `intersectionObserver`
+- `dimension`
 
 Each of the standard mocks can be installed, for a given test, using `standardMock.mock()`, and must be restored before the end of the test using `standardMock.restore()`.
 
@@ -222,3 +223,25 @@ The storage mocks are a bit different than the other mocks, because they serve p
 - `clear`
 
 Each of these are wrapped in a jest spy, which is automatically restored at the end of the test run.
+
+### Dimension mocks
+
+The dimension mocks allow mocking the following DOM properties:
+
+- `scrollWidth`
+- `scrollHeight`
+- `offsetWidth`
+- `offsetHeight`
+
+Pass the dimension you want to mock and the value you want returned for all calls when calling `mock`:
+
+```ts
+import {dimension} from '@shopify/jest-dom-mocks';
+
+beforeEach(() => {
+  dimension.mock({
+    scrollWidth: 100,
+    offsetHeight: 200,
+  });
+});
+```

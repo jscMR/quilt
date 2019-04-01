@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Added a mock for dimensions ([#625](https://github.com/Shopify/quilt/pull/625))
+
 ## 2.5.0 - 2019-03-28
 
 ### Added
