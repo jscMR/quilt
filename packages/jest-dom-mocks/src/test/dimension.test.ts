@@ -23,7 +23,17 @@ describe('Dimension mocks', () => {
         dimension.mock({
           scrollWidth: 200,
         });
-      }).toThrow();
+      }).toThrow(
+        'Dimensions are already mocked, but you tried to mock them again.',
+      );
+    });
+
+    it('throws if it no properties mocked', () => {
+      const dimension = new Dimension();
+
+      expect(() => dimension.mock({})).toThrow(
+        'No dimensions provided for mocking',
+      );
     });
 
     it('allows mocking all supported properties', () => {
@@ -38,10 +48,21 @@ describe('Dimension mocks', () => {
         });
       }).not.toThrow();
     });
+
+    it('mocks provided dimensions', () => {
+      const dimension = new Dimension();
+      const testEl = document.createElement('div');
+
+      dimension.mock({
+        scrollWidth: 200,
+      });
+
+      expect(testEl.scrollWidth).toBe(200);
+    });
   });
 
   describe('restore', () => {
-    it('sets isMocked', () => {
+    it('unsets isMocked', () => {
       const dimension = new Dimension();
       dimension.mock({
         scrollWidth: 200,
@@ -56,7 +77,21 @@ describe('Dimension mocks', () => {
 
       expect(() => {
         dimension.restore();
-      }).toThrow();
+      }).toThrow(
+        "Dimensions haven't been mocked, but you are trying to restore them.",
+      );
+    });
+
+    it('restores original dimension methods', () => {
+      const dimension = new Dimension();
+      const testEl = document.createElement('div');
+
+      dimension.mock({
+        scrollWidth: 200,
+      });
+      dimension.restore();
+
+      expect(testEl.scrollWidth).not.toBe(200);
     });
   });
 });
