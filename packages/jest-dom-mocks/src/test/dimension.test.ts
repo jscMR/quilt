@@ -49,7 +49,7 @@ describe('Dimension mocks', () => {
       }).not.toThrow();
     });
 
-    it('mocks provided dimensions', () => {
+    it('mocks provided dimensions with a number', () => {
       const dimension = new Dimension();
       const testEl = document.createElement('div');
 
@@ -58,6 +58,24 @@ describe('Dimension mocks', () => {
       });
 
       expect(testEl.scrollWidth).toBe(200);
+    });
+
+    it('mocks provided dimensions with a discriminant function', () => {
+      const dimension = new Dimension();
+
+      const targetEl = document.createElement('div');
+      const otherEl = document.createElement('div');
+
+      targetEl.id = 'testId';
+
+      dimension.mock({
+        scrollWidth() {
+          return this.id === 'testId' ? 200 : 0;
+        },
+      });
+
+      expect(targetEl.scrollWidth).toBe(200);
+      expect(otherEl.scrollWidth).toBe(0);
     });
   });
 
@@ -72,7 +90,7 @@ describe('Dimension mocks', () => {
       expect(dimension.isMocked()).toBe(false);
     });
 
-    it('throws if it has not yet been mocked', () => {
+    it('throws an error if it has not yet been mocked', () => {
       const dimension = new Dimension();
 
       expect(() => {
@@ -92,6 +110,7 @@ describe('Dimension mocks', () => {
       dimension.restore();
 
       expect(testEl.scrollWidth).not.toBe(200);
+      expect(testEl.scrollWidth).toBeUndefined();
     });
   });
 });

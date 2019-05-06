@@ -244,4 +244,33 @@ beforeEach(() => {
     offsetHeight: 200,
   });
 });
+
+afterEach(() => dimension.restore());
+```
+
+You can also pass in a function as a mock that returns a number:
+
+```tsx
+beforeEach(() => {
+  dimension.mock({
+    scrollWidth() {
+      return this.id === 'some-id' ? 200 : 0;
+    },
+  });
+});
+
+afterEach(() => dimension.restore());
+
+describe('DOM tests', () => {
+  it('returns the element width', () => {
+    function Component() {
+      return <div id="some-id" />;
+    }
+    const element = mount(<Component />);
+    const elementWidth =
+      element.domNode == null ? undefined : element.domNode.scrollWidth;
+
+    expect(elementWidth).toBe(200);
+  });
+});
 ```

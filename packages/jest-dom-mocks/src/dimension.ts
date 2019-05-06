@@ -7,14 +7,17 @@ const enum SupportedDimension {
   ScrollHeight = 'scrollHeight',
 }
 
-type Mocks = Partial<{[T in SupportedDimension]: number}>;
+type MockedGetter = () => number;
+type Mock = MockedGetter | number;
+type Mocks = Partial<{[T in SupportedDimension]: Mock}>;
+
+function isGetterFunction(mock?: Mock): mock is MockedGetter {
+  return mock != null && typeof mock === 'function';
+}
 
 export default class Dimension {
   private isUsingMock = false;
-  private nativeImplementation: Map<
-    string,
-    HTMLElement | Element | undefined
-  > = new Map();
+  private overwrittenImplementations: string[] = [];
 
   mock(mocks: Mocks) {
     if (this.isUsingMock) {
@@ -45,7 +48,10 @@ export default class Dimension {
   }
 
   @memoize()
-  private get implementationSources() {
+  private get nativeImplementations(): Map<
+    SupportedDimension,
+    HTMLElement | Element
+  > {
     return new Map([
       [SupportedDimension.OffsetWidth, HTMLElement.prototype],
       [SupportedDimension.OffsetHeight, HTMLElement.prototype],
@@ -56,23 +62,36 @@ export default class Dimension {
 
   private setDimensionFns(mocks: Mocks) {
     Object.keys(mocks).forEach((key: SupportedDimension) => {
-      const source = this.implementationSources.get(key);
+      const nativeSource = this.nativeImplementations.get(key);
+      const mock = mocks[key];
 
-      // Backup native implementation
-      this.nativeImplementation.set(key, source);
+      this.overwrittenImplementations.push(key);
 
-      // Overwrite native implementation
-      Object.defineProperty(source, key, {
-        value: mocks[key],
-      });
+      if (isGetterFunction(mock)) {
+        Object.defineProperty(nativeSource, key, {
+          get: mock,
+          configurable: true,
+        });
+      } else {
+        Object.defineProperty(nativeSource, key, {
+          value: mocks[key],
+          configurable: true,
+        });
+      }
     });
   }
 
   private restoreDimensionFns() {
-    this.nativeImplementation.forEach((property, key: SupportedDimension) => {
-      Object.defineProperty(this.implementationSources.get(key), key, {
-        value: property,
-      });
+    this.overwrittenImplementations.forEach((key: SupportedDimension) => {
+      const mockedImplementation = this.nativeImplementations.get(key);
+
+      if (mockedImplementation == null) {
+        return;
+      }
+
+      delete mockedImplementation[key];
     });
+
+    this.overwrittenImplementations = [];
   }
 }
