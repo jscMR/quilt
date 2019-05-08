@@ -248,13 +248,13 @@ beforeEach(() => {
 afterEach(() => dimension.restore());
 ```
 
-You can also pass in a function as a mock that returns a number:
+You can also pass in a function as a mock that returns a number. The element is passed as the only argument to the function:
 
 ```tsx
 beforeEach(() => {
   dimension.mock({
-    scrollWidth() {
-      return this.id === 'some-id' ? 200 : 0;
+    scrollWidth(element: HTMLElement) {
+      return element.id === 'test-id' ? 200 : 0;
     },
   });
 });

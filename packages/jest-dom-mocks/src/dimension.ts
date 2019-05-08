@@ -7,9 +7,15 @@ const enum SupportedDimension {
   ScrollHeight = 'scrollHeight',
 }
 
-type MockedGetter = () => number;
+type MockedGetter = (element: HTMLElement) => number;
 type Mock = MockedGetter | number;
-type Mocks = Partial<{[T in SupportedDimension]: Mock}>;
+type Mocks = Partial<Record<string, Mock>>;
+
+type AugmentedElement = Element & {[key: string]: Mock};
+
+interface NativeImplentationMap {
+  [key: string]: Element;
+}
 
 function isGetterFunction(mock?: Mock): mock is MockedGetter {
   return mock != null && typeof mock === 'function';
@@ -28,7 +34,7 @@ export default class Dimension {
       throw new Error('No dimensions provided for mocking');
     }
 
-    this.setDimensionFns(mocks);
+    this.mockDOMMethods(mocks);
     this.isUsingMock = true;
   }
 
@@ -39,7 +45,7 @@ export default class Dimension {
       );
     }
 
-    this.restoreDimensionFns();
+    this.restoreDOMMethods();
     this.isUsingMock = false;
   }
 
@@ -48,48 +54,47 @@ export default class Dimension {
   }
 
   @memoize()
-  private get nativeImplementations(): Map<
-    SupportedDimension,
-    HTMLElement | Element
-  > {
-    return new Map([
-      [SupportedDimension.OffsetWidth, HTMLElement.prototype],
-      [SupportedDimension.OffsetHeight, HTMLElement.prototype],
-      [SupportedDimension.ScrollWidth, Element.prototype],
-      [SupportedDimension.ScrollHeight, Element.prototype],
-    ]);
+  private get nativeImplementations(): NativeImplentationMap {
+    return {
+      [SupportedDimension.OffsetWidth]: HTMLElement.prototype,
+      [SupportedDimension.OffsetHeight]: HTMLElement.prototype,
+      [SupportedDimension.ScrollWidth]: Element.prototype,
+      [SupportedDimension.ScrollHeight]: Element.prototype,
+    };
   }
 
-  private setDimensionFns(mocks: Mocks) {
-    Object.keys(mocks).forEach((key: SupportedDimension) => {
-      const nativeSource = this.nativeImplementations.get(key);
-      const mock = mocks[key];
+  private mockDOMMethods(mocks: Mocks) {
+    Object.keys(mocks).forEach(method => {
+      const nativeSource = this.nativeImplementations[method];
+      const mock: Mock | undefined = mocks[method];
 
-      this.overwrittenImplementations.push(key);
+      this.overwrittenImplementations.push(method);
 
       if (isGetterFunction(mock)) {
-        Object.defineProperty(nativeSource, key, {
-          get: mock,
+        Object.defineProperty(nativeSource, method, {
+          get() {
+            return mock.call(this, this);
+          },
           configurable: true,
         });
       } else {
-        Object.defineProperty(nativeSource, key, {
-          value: mocks[key],
+        Object.defineProperty(nativeSource, method, {
+          value: mocks[method],
           configurable: true,
         });
       }
     });
   }
 
-  private restoreDimensionFns() {
-    this.overwrittenImplementations.forEach((key: SupportedDimension) => {
-      const mockedImplementation = this.nativeImplementations.get(key);
+  private restoreDOMMethods() {
+    this.overwrittenImplementations.forEach(method => {
+      const nativeSource = this.nativeImplementations[method];
 
-      if (mockedImplementation == null) {
+      if (nativeSource == null) {
         return;
       }
 
-      delete mockedImplementation[key];
+      delete (nativeSource as AugmentedElement)[method];
     });
 
     this.overwrittenImplementations = [];

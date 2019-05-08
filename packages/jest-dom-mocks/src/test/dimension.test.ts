@@ -69,8 +69,8 @@ describe('Dimension mocks', () => {
       targetEl.id = 'testId';
 
       dimension.mock({
-        scrollWidth() {
-          return this.id === 'testId' ? 200 : 0;
+        scrollWidth(element: HTMLElement) {
+          return element.id === 'testId' ? 200 : 0;
         },
       });
 
